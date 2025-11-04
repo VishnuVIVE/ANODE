@@ -1,0 +1,41 @@
+# ANODE - Adaptive Node-Oriented Data Placement (Hadoop 3.4.1)
+
+This repository contains a ready-to-deploy skeleton for the ANODE approach described in the uploaded paper. It includes:
+
+- Hadoop configuration templates (Hadoop 3.4.1)
+- Java skeleton for a custom block placement policy (`PerformanceAwareBlockPlacementPolicy`)
+- Python agent scripts to parse JobHistory, compute per-node weights (NDT → Ci → Pi) and apply them by uploading a weights XML and updating `hdfs-site.xml`
+- Maven `pom.xml` to compile the Java policy
+- `.gitignore`
+
+**Structure**
+```
+ANODE/
+├── README.md
+├── .gitignore
+├── config/
+│   ├── hdfs-site.xml
+│   ├── mapred-site.xml
+│   ├── core-site.xml
+│   └── yarn-site.xml
+├── java/
+│   └── PerformanceAwareBlockPlacementPolicy.java
+└── python/
+    ├── parse_jobhistory_and_compute_weights.py
+    └── anode_agent_apply.py
+```
+
+**How to use**
+1. Extract the ZIP and review files under `config/`. Adapt hostnames and paths to your environment (examples use Linux-style paths).
+2. Build the Java policy:
+   ```bash
+   cd java
+   mvn package
+   ```
+   Copy the produced jar into Hadoop NameNode classpath and set `dfs.blockplacementpolicy.class` in `hdfs-site.xml`.
+3. Place Python scripts on the ResourceManager/NameNode host and ensure `hdfs` CLI is configured.
+4. Run workloads to produce JobHistory logs, use the parser to compute weights and `anode_agent_apply.py` to upload/apply weights.
+
+**Notes**
+- The Java class is a skeleton. Implement the weighted selection (Algorithm 1 from the paper) inside `chooseTarget`.
+- JobHistory format varies across clusters; adapt `parse_jobhistory_and_compute_weights.py` to your JobHistory schema before production use.
