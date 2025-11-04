@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<configuration>
+  <!-- Enable custom block placement policy (ANODE) -->
+  <property>
+    <name>dfs.blockplacementpolicy.class</name>
+    <value>org.apache.hadoop.hdfs.server.blockmanagement.PerformanceAwareBlockPlacementPolicy</value>
+    <description>Custom block placement policy implementing ANODE (weights-based).</description>
+  </property>
+
+  <!-- Toggle weighted placement on/off -->
+  <property>
+    <name>dfs.blockplacement.weighted.enabled</name>
+    <value>true</value>
+    <description>Enable/disable ANODE weighted block placement.</description>
+  </property>
+
+  <!-- Default replication (adjust per needs) -->
+  <property>
+    <name>dfs.replication</name>
+    <value>3</value>
+  </property>
+
+  <!-- Data directories on datanodes (example default) -->
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>file:///var/hadoop/data1,file:///var/hadoop/data2</value>
+  </property>
+
+  <!-- Per-datanode weight map — this is read/overridden by agent.
+       The agent will generate/replace this file or update the value using dfsadmin -reconfig -->
+  <property>
+    <name>dfs.datanode.data.dir.weight</name>
+    <value>
+      <!-- Example JSON-like string or comma-separated pairs; the custom policy should parse this. -->
+      datanode1:1.25,datanode2:0.85,datanode3:0.65,datanode4:1.10
+    </value>
+    <description>
+      Comma-separated list of datanodeHost:weight pairs. The ANODE placement policy must parse this value.
+    </description>
+  </property>
+
+  <!-- Optional: location where ANODE stores computed xml per workload -->
+  <property>
+    <name>dfs.anode.weights.file</name>
+    <value>/user/hadoop/anode/weights/current_weights.xml</value>
+    <description>Path on HDFS or local path for agent-generated weight files (policy must read from this path).</description>
+  </property>
+
+  <!-- Enable NameNode reconfiguration of blockplacement policy properties dynamically -->
+  <property>
+    <name>dfs.nameservices</name>
+    <value>default</value>
+  </property>
+</configuration>
