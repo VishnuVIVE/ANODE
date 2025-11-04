@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<anodeWeights workload="WordCount" timestamp="2025-05-01T12:00:00Z">
+  <node name="datanode1.example.com" weight="1.25"/>
+  <node name="datanode2.example.com" weight="0.85"/>
+  <node name="datanode3.example.com" weight="0.65"/>
+  <node name="datanode4.example.com" weight="1.10"/>
+  <!-- replicate for all worker nodes -->
+</anodeWeights>
