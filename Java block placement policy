@@ -1,0 +1,94 @@
+package org.apache.hadoop.hdfs.server.blockmanagement;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
+import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.net.Node;
+import java.util.*;
+import java.io.InputStream;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+
+public class PerformanceAwareBlockPlacementPolicy extends BlockPlacementPolicyDefault {
+
+    private Map<String, Double> nodeWeights = new HashMap<>();
+    private boolean weightedEnabled = true;
+    private Configuration conf;
+
+    public PerformanceAwareBlockPlacementPolicy() {
+        super();
+    }
+
+    @Override
+    public void initialize(Configuration conf, FSClusterStats fsStats,
+                           Host2NodesMap host2DatanodeMap,
+                           NetworkTopology clusterMap, 
+                           DatanodeDescriptor[] excludedNodes) {
+        super.initialize(conf, fsStats, host2DatanodeMap, clusterMap, excludedNodes);
+        this.conf = conf;
+        this.weightedEnabled = conf.getBoolean("dfs.blockplacement.weighted.enabled", true);
+        loadWeightsFromConfig();
+    }
+
+    private void loadWeightsFromConfig() {
+        // Option 1: Read dfs.anode.weights.file from HDFS
+        String weightsPath = conf.get("dfs.anode.weights.file", null);
+        if (weightsPath != null) {
+            try {
+                FileSystem fs = FileSystem.get(conf);
+                Path p = new Path(weightsPath);
+                if (fs.exists(p)) {
+                    try (FSDataInputStream in = fs.open(p)) {
+                        // parse XML and populate nodeWeights map. (Use a simple parser or org.w3c DOM)
+                        // For brevity, omitted parsing code here. Implement XML parsing to fill nodeWeights.
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("Failed to read ANODE weights file: " + e.getMessage());
+            }
+        }
+
+        // Option 2: Fallback to parsing dfs.datanode.data.dir.weight
+        if (nodeWeights.isEmpty()) {
+            String raw = conf.get("dfs.datanode.data.dir.weight", "");
+            parseInlineWeights(raw);
+        }
+    }
+
+    private void parseInlineWeights(String raw) {
+        // Example format: host1:1.25,host2:0.85
+        if (raw == null || raw.isEmpty()) return;
+        String[] pairs = raw.split(",");
+        for (String p : pairs) {
+            String[] kv = p.split(":");
+            if (kv.length == 2) {
+                try {
+                    nodeWeights.put(kv[0].trim(), Double.parseDouble(kv[1].trim()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+    }
+
+    @Override
+    public DatanodeStorage chooseTarget(String srcPath, int numOfReplicas,
+                                        DatanodeDescriptor writer, List<DatanodeDescriptor> chosen,
+                                        boolean returnChosenNodes) {
+        if (!weightedEnabled || nodeWeights.isEmpty()) {
+            return super.chooseTarget(srcPath, numOfReplicas, writer, chosen, returnChosenNodes);
+        }
+
+        // Use a weighted probabilistic selection per ANODE (Equation 5)
+        // Build candidate list and weights, then choose with roulette-wheel selection.
+        // For illustration, we call super to select target(s). Replace with custom selection.
+        return super.chooseTarget(srcPath, numOfReplicas, writer, chosen, returnChosenNodes);
+    }
+
+    // Add method to refresh weights at runtime (e.g., called by agent via reconfig or via periodic thread).
+    public void refreshWeights(Map<String, Double> newWeights) {
+        this.nodeWeights.clear();
+        this.nodeWeights.putAll(newWeights);
+    }
+}
