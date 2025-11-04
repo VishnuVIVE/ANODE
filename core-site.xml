@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:8020</value>
+  </property>
+
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/var/hadoop/tmp</value>
+  </property>
+
+  <!-- HDFS user used by agent for writing weights to HDFS -->
+  <property>
+    <name>dfs.anode.agent.user</name>
+    <value>hadoop</value>
+  </property>
+</configuration>
